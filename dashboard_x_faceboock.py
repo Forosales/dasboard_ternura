@@ -86,6 +86,14 @@ except FileNotFoundError:
     print("Archivo de Twitter no encontrado. Revisa la carpeta 'data/'")
     twitter = pd.DataFrame()
 
+print(">>> DEBUG: Facebook seguidores:", len(fb_seguidores))
+print(">>> DEBUG: Facebook interacciones:", len(fb_interacciones))
+print(">>> DEBUG: Facebook visualizaciones:", len(fb_visualizaciones))
+print(">>> DEBUG: Facebook visitas:", len(fb_visitas))
+print(">>> DEBUG: Facebook clics:", len(fb_clics))
+print(">>> DEBUG: Twitter rows:", len(twitter))
+
+
 # ============================================================
 # (Aquí seguiría todo tu código de limpieza, funciones, dashboard, callbacks)
 # Solo cambiar TWITTER_CSV y FACEBOOK_EXCEL a rutas relativas
