@@ -15,6 +15,12 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from dash import Dash, html, dcc, Input, Output
 import dash_bootstrap_components as dbc
 
+# Aquí creas tu app
+app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+
+# 👇 AGREGA ESTA LÍNEA
+server = app.server
+
 # ============================================================
 # RUTAS RELATIVAS
 # ============================================================
@@ -87,4 +93,5 @@ except FileNotFoundError:
 
 # Al final:
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run_server(host="0.0.0.0", port=8050)
+
