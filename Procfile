@@ -1,1 +1,2 @@
-web: python dashboard_x_faceboock.py
+web: gunicorn dashboard_x_faceboock:server
+
