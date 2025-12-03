@@ -35,7 +35,8 @@ SPANISH_STOPWORDS = {
     "va","vez","aqui","asi","cada","hoy","dia","muy","tambien","nos",
     "nuestro","nuestra","hace","entre","donde","favor","durante", "esta", "te", "lleva",
     "nota", "tu", "chupa chups", "junto", "q estamos", "ante", "sido", "porque", "les",
-    "hemos", "ha", "segun", "traves", "tiene", "san", "pm", "solo", "lleva", "er", "junto"
+    "hemos", "ha", "segun", "traves", "tiene", "san", "pm", "solo", "lleva", "er", "junto",
+    "completa"
 }
 
 PALABRAS_INST = {
