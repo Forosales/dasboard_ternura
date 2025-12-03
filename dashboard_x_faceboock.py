@@ -83,12 +83,13 @@ except:
 # CARGA INSTAGRAM
 # ============================================================
 try:
-    ig_seguidores = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="Seguidores")
-    ig_interacciones = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="Interacciones")
-    ig_visualizaciones = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="Visualizaciones")
-    ig_visitas = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="Visitas")
-    ig_clics = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="Clics")
-    ig_alcance = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="Alcance")
+    ig_seguidores = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="seguidores")
+    ig_interacciones = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="interacciones")
+    ig_visualizaciones = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="visualizaciones")
+    ig_visitas = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="visitas")
+    ig_clics = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="clics")
+    ig_alcance = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="alcance")
+
 
     for df in [ig_seguidores, ig_interacciones, ig_visualizaciones, ig_visitas, ig_clics, ig_alcance]:
         df["Fecha"] = pd.to_datetime(df["Fecha"], errors="coerce")
