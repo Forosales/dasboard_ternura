@@ -14,13 +14,14 @@ from dash import Dash, html, dcc, Input, Output
 import dash_bootstrap_components as dbc
 
 # ============================================================
-# RUTAS RELATIVAS (FUNCIONAN EN HEROKU Y EN TU PC)
+# RUTAS RELATIVAS
 # ============================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
 TWITTER_CSV = os.path.join(DATA_DIR, "tweets_data_twscrape.csv")
 FACEBOOK_EXCEL = os.path.join(DATA_DIR, "facebook_data.xlsx")
+INSTAGRAM_EXCEL = os.path.join(DATA_DIR, "instagram.xlsx")
 
 # ============================================================
 # STOPWORDS
@@ -32,7 +33,9 @@ SPANISH_STOPWORDS = {
     "todo","todos","todas","desde","han","ser","son","fue","fueron",
     "mas","lo","estado","ano","anos","www","http","https","toda","sobre",
     "va","vez","aqui","asi","cada","hoy","dia","muy","tambien","nos",
-    "nuestro","nuestra","hace","entre","donde","favor","durante"
+    "nuestro","nuestra","hace","entre","donde","favor","durante", "esta", "te", "lleva",
+    "nota", "tu", "chupa chups", "junto", "q estamos", "ante", "sido", "porque", "les",
+    "hemos", "ha", "segun", "traves", "tiene", "san", "pm", "solo", "lleva", "er", "junto"
 }
 
 PALABRAS_INST = {
@@ -73,17 +76,33 @@ try:
         df["Fecha"] = pd.to_datetime(df["Fecha"], errors="coerce")
         df["Primary"] = pd.to_numeric(df["Primary"], errors="coerce")
 
-except Exception as e:
-    print("ERROR cargando archivos de Facebook:", e)
+except:
     fb_seguidores = fb_interacciones = fb_visualizaciones = fb_visitas = fb_clics = pd.DataFrame()
+
+# ============================================================
+# CARGA INSTAGRAM
+# ============================================================
+try:
+    ig_seguidores = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="Seguidores")
+    ig_interacciones = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="Interacciones")
+    ig_visualizaciones = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="Visualizaciones")
+    ig_visitas = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="Visitas")
+    ig_clics = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="Clics")
+    ig_alcance = pd.read_excel(INSTAGRAM_EXCEL, sheet_name="Alcance")
+
+    for df in [ig_seguidores, ig_interacciones, ig_visualizaciones, ig_visitas, ig_clics, ig_alcance]:
+        df["Fecha"] = pd.to_datetime(df["Fecha"], errors="coerce")
+        df["Primary"] = pd.to_numeric(df["Primary"], errors="coerce")
+
+except:
+    ig_seguidores = ig_interacciones = ig_visualizaciones = ig_visitas = ig_clics = ig_alcance = pd.DataFrame()
 
 # ============================================================
 # CARGA TWITTER
 # ============================================================
 try:
     twitter = pd.read_csv(TWITTER_CSV)
-except Exception as e:
-    print("ERROR cargando Twitter:", e)
+except:
     twitter = pd.DataFrame()
 
 def clean_twitter(df):
@@ -98,6 +117,7 @@ def clean_twitter(df):
 
     for col in ["retweets", "likes", "replies"]:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+
     return df
 
 if not twitter.empty:
@@ -105,59 +125,28 @@ if not twitter.empty:
 
     analyzer = SentimentIntensityAnalyzer()
     twitter["sentimiento"] = twitter["texto_limpio"].apply(lambda t: analyzer.polarity_scores(t)["compound"])
-    twitter["sent_cat"] = twitter["sentimiento"].apply(lambda x: "positivo" if x > 0.05 else "negativo" if x < -0.05 else "neutro")
-
-    def compute_lda(df):
-        if df["texto_limpio"].str.len().sum() < 30:
-            return pd.DataFrame({"cluster":[0], "words":["sin datos"]})
-
-        vect = CountVectorizer(stop_words=list(STOPWORDS_TOTAL), max_features=1500)
-        dtm = vect.fit_transform(df["texto_limpio"])
-
-        lda = LatentDirichletAllocation(n_components=3, random_state=42)
-        lda.fit(dtm)
-
-        words = vect.get_feature_names_out()
-        return pd.DataFrame([
-            {"cluster": i, "words": ", ".join([words[j] for j in comp.argsort()[-10:]])}
-            for i, comp in enumerate(lda.components_)
-        ])
-
-    twitter_topics = compute_lda(twitter)
-    start = twitter["fecha"].min().strftime("%Y-%m-%d")
-    end   = twitter["fecha"].max().strftime("%Y-%m-%d")
-else:
-    start = end = None
+    twitter["sent_cat"] = twitter["sentimiento"].apply(
+        lambda x: "positivo" if x > 0.05 else "negativo" if x < -0.05 else "neutro"
+    )
 
 # ============================================================
-# DASHBOARD – APP + SERVER (Necesario para Heroku)
+# DASHBOARD
 # ============================================================
 app = Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN])
-server = app.server   # << CLAVE para Heroku
+server = app.server
 
-# ============================================================
-# COMPONENTE CARD
-# ============================================================
 def card(title, value, color="primary"):
     return dbc.Card(
         dbc.CardBody([
             html.H6(title),
             html.H3(value)
-        ]), 
-        color=color, 
+        ]),
+        color=color,
         inverse=True
     )
 
-def get_numeric_column(df):
-    if df is None or df.empty:
-        return None
-    for c in df.columns:
-        if pd.api.types.is_numeric_dtype(df[c]):
-            return c
-    return None
-
 # ============================================================
-# LAYOUT COMPLETO
+# LAYOUT
 # ============================================================
 app.layout = dbc.Container([
 
@@ -165,16 +154,20 @@ app.layout = dbc.Container([
 
     dcc.Tabs(id="tabs", value="tab-twitter", children=[
 
-# ---------------------- TWITTER ----------------------
+        # -------------------------------------------------------
+        # TWITTER
+        # -------------------------------------------------------
         dcc.Tab(label="Twitter / X", value="tab-twitter", children=[
             html.Br(),
 
             dbc.Row([
                 dbc.Col(card("Tweets totales", len(twitter), "info")),
-                dbc.Col(card("Sentimiento", 
+                dbc.Col(card("Sentimiento",
                              round(twitter["sentimiento"].mean(),3) if not twitter.empty else 0, "success")),
-                dbc.Col(card("RT totales", twitter["retweets"].sum() if not twitter.empty else 0, "primary")),
-                dbc.Col(card("Likes totales", twitter["likes"].sum() if not twitter.empty else 0, "warning")),
+                dbc.Col(card("RT totales",
+                             twitter["retweets"].sum() if not twitter.empty else 0, "primary")),
+                dbc.Col(card("Likes totales",
+                             twitter["likes"].sum() if not twitter.empty else 0, "warning")),
             ]),
 
             html.Br(),
@@ -192,7 +185,7 @@ app.layout = dbc.Container([
 
             dcc.Dropdown(
                 id="pais",
-                options=[{"label":p.capitalize(),"value":p} 
+                options=[{"label":p.capitalize(),"value":p}
                          for p in sorted(twitter["pais"].unique())] if not twitter.empty else [],
                 value="todos",
                 clearable=False
@@ -211,10 +204,8 @@ app.layout = dbc.Container([
 
             dcc.DatePickerRange(
                 id="rango",
-                start_date=start,
-                end_date=end,
-                min_date_allowed=start,
-                max_date_allowed=end
+                start_date=twitter["fecha"].min() if not twitter.empty else None,
+                end_date=twitter["fecha"].max() if not twitter.empty else None
             ),
 
             dbc.Row([
@@ -241,31 +232,23 @@ app.layout = dbc.Container([
             dcc.Graph(id="twt-lda"),
         ]),
 
-# ---------------------- FACEBOOK ----------------------
+        # -------------------------------------------------------
+        # FACEBOOK
+        # -------------------------------------------------------
         dcc.Tab(label="Facebook", value="tab-facebook", children=[
             html.Br(),
 
             dbc.Row([
                 dbc.Col(card("Seguidores",
-                    fb_seguidores[get_numeric_column(fb_seguidores)].sum() 
-                    if not fb_seguidores.empty else 0,
-                    "primary")),
+                    fb_seguidores["Primary"].sum() if not fb_seguidores.empty else 0, "primary")),
                 dbc.Col(card("Interacciones",
-                    fb_interacciones[get_numeric_column(fb_interacciones)].sum() 
-                    if not fb_interacciones.empty else 0,
-                    "success")),
+                    fb_interacciones["Primary"].sum() if not fb_interacciones.empty else 0, "success")),
                 dbc.Col(card("Visualizaciones",
-                    fb_visualizaciones[get_numeric_column(fb_visualizaciones)].sum() 
-                    if not fb_visualizaciones.empty else 0,
-                    "info")),
+                    fb_visualizaciones["Primary"].sum() if not fb_visualizaciones.empty else 0, "info")),
                 dbc.Col(card("Clics",
-                    fb_clics[get_numeric_column(fb_clics)].sum() 
-                    if not fb_clics.empty else 0,
-                    "danger")),
+                    fb_clics["Primary"].sum() if not fb_clics.empty else 0, "danger")),
                 dbc.Col(card("Visitas",
-                    fb_visitas[get_numeric_column(fb_visitas)].sum() 
-                    if not fb_visitas.empty else 0,
-                    "secondary")),
+                    fb_visitas["Primary"].sum() if not fb_visitas.empty else 0, "secondary")),
             ]),
 
             html.Br(),
@@ -288,21 +271,66 @@ app.layout = dbc.Container([
             dcc.Graph(id="fb-visitas"),
         ]),
 
-# ---------------------- COMPARACIÓN ----------------------
+        # -------------------------------------------------------
+        # INSTAGRAM
+        # -------------------------------------------------------
+        dcc.Tab(label="Instagram", value="tab-instagram", children=[
+            html.Br(),
+
+            dbc.Row([
+                dbc.Col(card("Seguidores",
+                    ig_seguidores["Primary"].sum() if not ig_seguidores.empty else 0, "primary")),
+                dbc.Col(card("Interacciones",
+                    ig_interacciones["Primary"].sum() if not ig_interacciones.empty else 0, "success")),
+                dbc.Col(card("Visualizaciones",
+                    ig_visualizaciones["Primary"].sum() if not ig_visualizaciones.empty else 0, "info")),
+                dbc.Col(card("Clics",
+                    ig_clics["Primary"].sum() if not ig_clics.empty else 0, "danger")),
+                dbc.Col(card("Visitas",
+                    ig_visitas["Primary"].sum() if not ig_visitas.empty else 0, "secondary")),
+                dbc.Col(card("Alcance",
+                    ig_alcance["Primary"].sum() if not ig_alcance.empty else 0, "warning")),
+            ]),
+
+            html.Br(),
+
+            dcc.Dropdown(
+                id="periodo-ig",
+                options=[
+                    {"label":"Día","value":"D"},
+                    {"label":"Semana","value":"W"},
+                    {"label":"Mes","value":"M"},
+                ],
+                value="D",
+                clearable=False
+            ),
+
+            dcc.Graph(id="ig-seguid"),
+            dcc.Graph(id="ig-inter"),
+            dcc.Graph(id="ig-vis"),
+            dcc.Graph(id="ig-clics"),
+            dcc.Graph(id="ig-visitas"),
+            dcc.Graph(id="ig-alcance"),
+        ]),
+
+        # -------------------------------------------------------
+        # COMPARACIÓN
+        # -------------------------------------------------------
         dcc.Tab(label="Comparación", value="tab-compare", children=[
             html.Br(),
 
             dbc.Row([
-                dbc.Col(card("Total Twitter", len(twitter) if not twitter.empty else 0,"info")),
+                dbc.Col(card("Total Twitter",
+                    len(twitter) if not twitter.empty else 0, "info")),
                 dbc.Col(card("Total Facebook",
-                    fb_interacciones[get_numeric_column(fb_interacciones)].sum()
-                    if not fb_interacciones.empty else 0,
-                    "primary"))
+                    fb_interacciones["Primary"].sum() if not fb_interacciones.empty else 0, "primary")),
+                dbc.Col(card("Total Instagram",
+                    ig_interacciones["Primary"].sum() if not ig_interacciones.empty else 0, "danger")),
             ]),
 
             dcc.Graph(id="cmp-total"),
             dcc.Graph(id="cmp-tend"),
-        ])
+        ]),
     ])
 ], fluid=True)
 
@@ -391,9 +419,9 @@ def update_twitter(tema, pais, periodo, start, end):
     # ----- Top likes
     fig_likes = px.bar(dff.nlargest(10,"likes"), x="usuario", y="likes", title="Top likes")
 
-    # ----- Wordcloud (guardado en /tmp para Heroku)
+    # ----- Wordcloud
     text = " ".join(dff["texto_limpio"])
-    wc_path = os.path.join("/tmp", "wc.png")  # Heroku SOLO deja escribir en /tmp
+    wc_path = os.path.join("/tmp", "wc.png")
 
     if len(text.strip()) > 10:
         wc = WordCloud(
@@ -441,7 +469,6 @@ def update_twitter(tema, pais, periodo, start, end):
         fig_lda
     )
 
-
 # ============================================================
 # CALLBACKS FACEBOOK
 # ============================================================
@@ -471,12 +498,46 @@ def update_facebook(periodo):
             figures.append(go.Figure())
             continue
 
-        col = get_numeric_column(df_fb)
-        if col is None:
+        col = "Primary"
+        dff = df_fb.set_index("Fecha")[col].resample(periodo).sum().reset_index()
+        fig = px.line(dff, x="Fecha", y=col, title=title)
+        figures.append(fig)
+
+    return figures
+
+# ============================================================
+# CALLBACKS INSTAGRAM
+# ============================================================
+@app.callback(
+    [
+        Output("ig-seguid","figure"),
+        Output("ig-inter","figure"),
+        Output("ig-vis","figure"),
+        Output("ig-clics","figure"),
+        Output("ig-visitas","figure"),
+        Output("ig-alcance","figure"),
+    ],
+    Input("periodo-ig","value")
+)
+def update_instagram(periodo):
+
+    figures = []
+
+    for df_ig, title in [
+        (ig_seguidores, "Seguidores"),
+        (ig_interacciones, "Interacciones"),
+        (ig_visualizaciones, "Visualizaciones"),
+        (ig_clics, "Clics"),
+        (ig_visitas, "Visitas"),
+        (ig_alcance, "Alcance"),
+    ]:
+
+        if df_ig.empty:
             figures.append(go.Figure())
             continue
 
-        dff = df_fb.set_index("Fecha")[col].resample(periodo).sum().reset_index()
+        col = "Primary"
+        dff = df_ig.set_index("Fecha")[col].resample(periodo).sum().reset_index()
         fig = px.line(dff, x="Fecha", y=col, title=title)
         figures.append(fig)
 
@@ -497,37 +558,44 @@ def update_compare(tab):
     if tab != "tab-compare":
         return go.Figure(), go.Figure()
 
-    if twitter.empty or fb_interacciones.empty:
+    if twitter.empty or fb_interacciones.empty or ig_interacciones.empty:
         return go.Figure(), go.Figure()
 
-    col_fb = get_numeric_column(fb_interacciones)
-
     tw_total = len(twitter)
-    fb_total = fb_interacciones[col_fb].sum()
+    fb_total = fb_interacciones["Primary"].sum()
+    ig_total = ig_interacciones["Primary"].sum()
 
+    # --- Gráfico total comparativo ---
     fig_total = px.bar(
-        x=["Twitter","Facebook"],
-        y=[tw_total, fb_total],
-        title="Comparación total"
+        x=["Twitter", "Facebook", "Instagram"],
+        y=[tw_total, fb_total, ig_total],
+        title="Comparación total de actividad"
     )
 
+    # --- Tendencias semanales ---
     twitter_ts = twitter.set_index("fecha").resample("W").size().reset_index(name="Twitter")
-    fb_ts = fb_interacciones.set_index("Fecha")[col_fb].resample("W").sum().reset_index()
+
+    fb_ts = fb_interacciones.set_index("Fecha")["Primary"].resample("W").sum().reset_index()
+    fb_ts.rename(columns={"Primary": "Facebook"}, inplace=True)
+
+    ig_ts = ig_interacciones.set_index("Fecha")["Primary"].resample("W").sum().reset_index()
+    ig_ts.rename(columns={"Primary": "Instagram"}, inplace=True)
 
     fig_tend = go.Figure()
     fig_tend.add_trace(go.Scatter(x=twitter_ts["fecha"], y=twitter_ts["Twitter"],
                                   mode="lines", name="Twitter"))
-    fig_tend.add_trace(go.Scatter(x=fb_ts["Fecha"], y=fb_ts[col_fb],
+    fig_tend.add_trace(go.Scatter(x=fb_ts["Fecha"], y=fb_ts["Facebook"],
                                   mode="lines", name="Facebook"))
+    fig_tend.add_trace(go.Scatter(x=ig_ts["Fecha"], y=ig_ts["Instagram"],
+                                  mode="lines", name="Instagram"))
 
-    fig_tend.update_layout(title="Tendencias semanales")
+    fig_tend.update_layout(title="Tendencias semanales por plataforma")
 
     return fig_total, fig_tend
 
 # ============================================================
-# RUN LOCAL (Heroku usa Gunicorn)
+# RUN SERVER
 # ============================================================
 if __name__ == "__main__":
     app.run_server(host="0.0.0.0", port=8050, debug=False)
-
 
