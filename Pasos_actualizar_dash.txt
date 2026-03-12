@@ -1,0 +1,11 @@
+Lee, todos los cambios que se hagan ahora se actualizan con los dos pasos siguientes:
+
+
+
+Paso 1: Abre Git Bash dentro de esa carpeta
+
+cd "G:/Mi unidad/Consultorias/Signature_product_ternura_WV/dashboard_ternura"
+
+Paso : Ejecutar script:
+
+./deploy.sh "Actualización Instagram funcionando" # este comentario puede cambiar 
