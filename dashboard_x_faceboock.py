@@ -240,47 +240,26 @@ app.layout = dbc.Container([
         dcc.Tab(label="Facebook", value="tab-facebook", children=[
             html.Br(),
 
-<<<<<<< HEAD
-           dbc.Row([
-    dbc.Col(card("Seguidores 2025",
-        fb_seguidores["Primary"].sum() if not fb_seguidores.empty else 0, "primary")),
-
-    dbc.Col(card("Seguidores totales",
-        "35 000", "dark")),
-
-    dbc.Col(card("Interacciones",
-        fb_interacciones["Primary"].sum() if not fb_interacciones.empty else 0, "success")),
-
-    dbc.Col(card("Visualizaciones",
-        fb_visualizaciones["Primary"].sum() if not fb_visualizaciones.empty else 0, "info")),
-
-    dbc.Col(card("Clics",
-        fb_clics["Primary"].sum() if not fb_clics.empty else 0, "danger")),
-
-    dbc.Col(card("Visitas",
-        fb_visitas["Primary"].sum() if not fb_visitas.empty else 0, "secondary")),
-]),
-=======
-            dbc.Row([
-                dbc.Col(card("Seguidores 2025",
+        dbc.Row([
+            dbc.Col(card("Seguidores 2025",
                 fb_seguidores["Primary"].sum() if not fb_seguidores.empty else 0, "primary")),
->>>>>>> f094946 (Cambio seguidores 2025)
 
-            dbc.Col(card("Seguidores totales",
+        dbc.Col(card("Seguidores totales",
         "35 000", "dark")),
 
-            dbc.Col(card("Interacciones",
-                ["Primary"].sum() if not fb_interacciones.empty else 0, "success")),
+        dbc.Col(card("Interacciones",
+                fb_interacciones["Primary"].sum() if not fb_interacciones.empty else 0, "success")),
 
-            dbc.Col(card("Visualizaciones",
-                fb_visualizaciones["Primary"].sum() if not fb_visualizaciones.empty else 0, "info")),
+        dbc.Col(card("Visualizaciones",
+            fb_visualizaciones["Primary"].sum() if not fb_visualizaciones.empty else 0, "info")),
 
-            dbc.Col(card("Clics",
-                fb_clics["Primary"].sum() if not fb_clics.empty else 0, "danger")),
+        dbc.Col(card("Clics",
+            fb_clics["Primary"].sum() if not fb_clics.empty else 0, "danger")),
 
-            dbc.Col(card("Visitas",
-                fb_visitas["Primary"].sum() if not fb_visitas.empty else 0, "secondary")),
-            ]),
+        dbc.Col(card("Visitas",
+            fb_visitas["Primary"].sum() if not fb_visitas.empty else 0, "secondary")),
+    ]),
+
             html.Br(),
 
             dcc.Dropdown(
@@ -627,5 +606,6 @@ def update_compare(tab):
 # RUN SERVER
 # ============================================================
 if __name__ == "__main__":
-    app.run_server(host="0.0.0.0", port=8050, debug=False)
+    port = int(os.environ.get("PORT", 8050))
+    app.run_server(host="0.0.0.0", port=port, debug=False)
 
