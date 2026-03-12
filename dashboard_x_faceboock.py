@@ -240,18 +240,25 @@ app.layout = dbc.Container([
         dcc.Tab(label="Facebook", value="tab-facebook", children=[
             html.Br(),
 
-            dbc.Row([
-                dbc.Col(card("Seguidores",
-                    fb_seguidores["Primary"].sum() if not fb_seguidores.empty else 0, "primary")),
-                dbc.Col(card("Interacciones",
-                    fb_interacciones["Primary"].sum() if not fb_interacciones.empty else 0, "success")),
-                dbc.Col(card("Visualizaciones",
-                    fb_visualizaciones["Primary"].sum() if not fb_visualizaciones.empty else 0, "info")),
-                dbc.Col(card("Clics",
-                    fb_clics["Primary"].sum() if not fb_clics.empty else 0, "danger")),
-                dbc.Col(card("Visitas",
-                    fb_visitas["Primary"].sum() if not fb_visitas.empty else 0, "secondary")),
-            ]),
+           dbc.Row([
+    dbc.Col(card("Seguidores 2025",
+        fb_seguidores["Primary"].sum() if not fb_seguidores.empty else 0, "primary")),
+
+    dbc.Col(card("Seguidores totales",
+        "35 000", "dark")),
+
+    dbc.Col(card("Interacciones",
+        fb_interacciones["Primary"].sum() if not fb_interacciones.empty else 0, "success")),
+
+    dbc.Col(card("Visualizaciones",
+        fb_visualizaciones["Primary"].sum() if not fb_visualizaciones.empty else 0, "info")),
+
+    dbc.Col(card("Clics",
+        fb_clics["Primary"].sum() if not fb_clics.empty else 0, "danger")),
+
+    dbc.Col(card("Visitas",
+        fb_visitas["Primary"].sum() if not fb_visitas.empty else 0, "secondary")),
+]),
 
             html.Br(),
 
